@@ -1,39 +1,30 @@
-package com.example.application.controller;
+package com.example.application.controller.userController;
 
-import com.example.application.entity.Courier;
-import com.example.application.entity.Member;
-import com.example.application.entity.Production;
+import com.example.application.entity.*;
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import org.hyperledger.fabric.client.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+@CrossOrigin
 @RestController
-public class FabricController {
+public class CommodityControllerUser {
 
     @Autowired
     Gateway gateway;
 
     @Autowired
     Contract contract;
-
-//    测试用，完整JSON字符串直接创建商品
-    @GetMapping(value = "/ini")
-    public void initial() throws Exception {
-        System.out.println("\n--> Submit Transaction: initial, function creates the initial set of commodity on the ledger");
-        try {
-            contract.submitTransaction("initial");
-            System.out.println("*** Transaction committed successfully");
-        } catch (EndorseException | CommitException | SubmitException | CommitStatusException e) {
-            System.out.println(e.getMessage());
-        }
-    }
 
 //    创建商品，以时间辍追踪
     @GetMapping(value = "/createCommodity")
@@ -113,22 +104,7 @@ public class FabricController {
         }
     }
 
-    @PostMapping(value = "/updateAuthority")
-    public String updateAuthority(@RequestParam Map<String, Object> map) throws Exception {
 
-        String traceability = (String) map.get("traceability");
-
-        try {
-            contract.submitTransaction("updateCommodityAuthority",traceability,
-                    (String) map.get("barCode"),
-                    (String) map.get("name"),
-                    (String) map.get("category"),
-                    (String) map.get("brand"));
-            return "成功更新" + traceability + "的识别信息";
-        } catch (EndorseException | CommitException | SubmitException | CommitStatusException e) {
-            return e.getMessage();
-        }
-    }
 
 //    更新生产环节信息，监听链码事件
     @PostMapping(value = "/updateProduction")
@@ -165,11 +141,11 @@ public class FabricController {
     }
 
 //    获取全部溯源码
-    @GetMapping(value = "/queryAllKey")
-    public String queryAllKey() throws Exception {
+    @GetMapping(value = "/queryAllComKey")
+    public String queryAllComKey() throws Exception {
         Gson gson = new Gson();
         try {
-            StringBuilder str = new StringBuilder(new String(contract.evaluateTransaction("queryAllTraceability")));
+            StringBuilder str = new StringBuilder(new String(contract.evaluateTransaction("queryAllCommodity")));
             str = new StringBuilder(gson.toJson(str.toString()));
             Pattern pattern = Pattern.compile("commodity.*?Z");
             Matcher matcher = pattern.matcher(str.toString());
@@ -184,31 +160,46 @@ public class FabricController {
         }
     }
 
-//    获取全部信息，以JSON格式输出
-    @GetMapping(value = "/queryAll")
-    public String queryAll() throws Exception {
+//    获取全部商品信息
+    @GetMapping(value = "/queryAllCom")
+    public List<Commodity> queryAllCom() throws Exception {
         System.out.println("\n--> Submit Transaction: queryAllCommodity, function returns all the commodities in the ledger");
         try {
-            String s = new String(contract.evaluateTransaction("queryAllTraceability"));
+            String s = new String(contract.evaluateTransaction("queryAllCommodity"));
             Gson gson = new Gson();
-            return gson.toJson(s);
+            Pattern pattern = Pattern.compile("commodity.*?Z");
+            Type type = new TypeToken<List<Commodity>>(){}.getType();
+            List<Commodity> list = gson.fromJson(s, type);
+            List<Commodity> listMatcher = new ArrayList<>();
+            for (Commodity commodity : list) {
+                Matcher matcher = pattern.matcher(commodity.getTraceability());
+                if (matcher.find()) {
+                    listMatcher.add(commodity);
+                }
+            }
+            return listMatcher;
         } catch (GatewayException e) {
             System.out.println(e.getMessage());
-            return e.getMessage();
+            List<Commodity> list = new ArrayList<>();
+            Commodity commodity = new Commodity();
+            commodity.setName(e.getMessage());
+            list.add(commodity);
+            return list;
         }
     }
 
 //    以溯源码查找商品信息
-    @GetMapping(value = "/queryById")
-    public String queryById(@RequestParam String traceability) throws Exception {
+    @GetMapping(value = "/queryComById")
+    public Commodity queryComById(@RequestParam String traceability) throws Exception {
         System.out.println("\n--> Submit Transaction: queryById, function returns specific commodities in the ledger");
         try {
             String s = new String(contract.evaluateTransaction("readCommodity",traceability));
-            Gson gson = new Gson();
-            return gson.toJson(s);
+            return new Gson().fromJson(s,Commodity.class);
         } catch (GatewayException e) {
             System.out.println(e.getMessage());
-            return e.getMessage();
+            Commodity commodity = new Commodity();
+            commodity.setName(e.getMessage());
+            return commodity;
         }
     }
 
@@ -223,6 +214,7 @@ public class FabricController {
         }
     }
 
+//    事件监听
     private CloseableIterator<ChaincodeEvent> startChaincodeEventListening() {
 
         ExecutorService executor = Executors.newCachedThreadPool();
