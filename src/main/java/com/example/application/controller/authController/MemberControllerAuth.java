@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.hyperledger.fabric.client.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.web.bind.annotation.*;
 
 import java.lang.reflect.Type;
@@ -17,6 +18,9 @@ import java.util.regex.Pattern;
 @CrossOrigin
 @RestController
 public class MemberControllerAuth {
+
+    @Autowired
+    private ApplicationContext applicationContext;
 
     @Autowired
     Gateway gateway;
@@ -41,6 +45,18 @@ public class MemberControllerAuth {
     public String memberAuth(@RequestParam Map<String, Object> map) throws Exception {
         try {
             contract.submitTransaction("updateMemberAuth",(String) map.get("traceability"));
+
+//            刷新Bean
+//            DefaultListableBeanFactory defaultListableBeanFactory =
+//                    (DefaultListableBeanFactory)applicationContext.getAutowireCapableBeanFactory();
+//            defaultListableBeanFactory.destroySingleton("userDetailsService");
+//            defaultListableBeanFactory.destroySingleton("filterChain");
+//            SecurityConfig securityConfig = new SecurityConfig();
+//            securityConfig.setContract(contract);
+//            UserDetailsService userDetailsService = securityConfig.userDetailsService();
+//            SecurityFilterChain filterChain = securityConfig.filterChain(new HttpSecurity());
+//            defaultListableBeanFactory.registerSingleton("userDetailsService",userDetailsService);
+
             return "成功授予用户权限";
         } catch (EndorseException | CommitException | SubmitException | CommitStatusException e) {
             return e.getMessage();
