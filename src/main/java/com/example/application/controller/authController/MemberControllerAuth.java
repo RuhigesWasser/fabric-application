@@ -6,7 +6,10 @@ import com.google.gson.reflect.TypeToken;
 import org.hyperledger.fabric.client.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -15,8 +18,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@CrossOrigin
 @RestController
+@CrossOrigin
 public class MemberControllerAuth {
 
     @Autowired
@@ -27,6 +30,12 @@ public class MemberControllerAuth {
 
     @Autowired
     Contract contract;
+
+    @RequestMapping(value = "/login", method = RequestMethod.OPTIONS)
+    public ResponseEntity options(HttpServletResponse response) {
+        response.setHeader("Allow", "HEAD,GET,PUT,OPTIONS");
+        return new ResponseEntity(HttpStatus.OK);
+    }
 
     //    用户注册待审核列表
     @GetMapping(value = "/getRegisList")
@@ -42,20 +51,9 @@ public class MemberControllerAuth {
 
     //    用户授权
     @PostMapping("/memberAuth")
-    public String memberAuth(@RequestParam Map<String, Object> map) throws Exception {
+    public String memberAuth(@RequestBody Map<String, Object> map) throws Exception {
         try {
             contract.submitTransaction("updateMemberAuth",(String) map.get("traceability"));
-
-//            刷新Bean
-//            DefaultListableBeanFactory defaultListableBeanFactory =
-//                    (DefaultListableBeanFactory)applicationContext.getAutowireCapableBeanFactory();
-//            defaultListableBeanFactory.destroySingleton("userDetailsService");
-//            defaultListableBeanFactory.destroySingleton("filterChain");
-//            SecurityConfig securityConfig = new SecurityConfig();
-//            securityConfig.setContract(contract);
-//            UserDetailsService userDetailsService = securityConfig.userDetailsService();
-//            SecurityFilterChain filterChain = securityConfig.filterChain(new HttpSecurity());
-//            defaultListableBeanFactory.registerSingleton("userDetailsService",userDetailsService);
 
             return "成功授予用户权限";
         } catch (EndorseException | CommitException | SubmitException | CommitStatusException e) {
@@ -65,13 +63,35 @@ public class MemberControllerAuth {
 
     //   撤销用户权限
     @PostMapping("/cancelAuth")
-    public String cancelAuth(@RequestParam Map<String, Object> map) throws Exception {
+    public String cancelAuth(@RequestBody Map<String, Object> map) throws Exception {
         try {
             contract.submitTransaction("cancelMemberAuth",(String) map.get("traceability"));
             return "成功撤销用户权限";
         } catch (EndorseException | CommitException | SubmitException | CommitStatusException e) {
             return e.getMessage();
         }
+    }
+
+    @GetMapping(value = "/queryMemByName")
+    public Org queryTraByName(@RequestParam String username) throws Exception {
+        StringBuilder id = new StringBuilder();
+        Org organisation = new Org();
+        List<Org> list = queryAllMem();
+        list.removeIf(org -> !org.getName().equals(username));
+        for(Org org : list) {
+            id.append(org.getTraceability());
+            organisation = org;
+        }
+        if(username.equals("admin")) {
+            organisation.setName("admin");
+            organisation.setPassword("");
+            organisation.setTraceability("admin");
+            organisation.setPhone("adminPhoneNumber");
+            organisation.setId("admin");
+            organisation.setType("ROLE_ADMIN");
+            organisation.setAuthentication("true");
+        }
+        return organisation;
     }
 
     @GetMapping(value = "/queryAllMem")

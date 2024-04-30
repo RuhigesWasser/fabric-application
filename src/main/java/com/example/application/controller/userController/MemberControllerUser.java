@@ -11,8 +11,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@CrossOrigin
 @RestController
+@CrossOrigin
 public class MemberControllerUser {
 
     @Autowired
@@ -23,7 +23,7 @@ public class MemberControllerUser {
 
     //    用户注册
     @PostMapping(value = "/regis")
-    public String regis(@RequestParam Map<String, Object> map) throws GatewayException {
+    public String regis(@RequestBody Map<String, Object> map) throws GatewayException {
 
         Gson gson = new Gson();
         Org org = new Org();

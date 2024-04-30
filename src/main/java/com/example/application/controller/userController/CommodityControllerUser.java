@@ -16,8 +16,8 @@ import java.util.regex.Pattern;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-@CrossOrigin
 @RestController
+@CrossOrigin
 public class CommodityControllerUser {
 
     @Autowired
@@ -57,7 +57,7 @@ public class CommodityControllerUser {
     }
 
     @PostMapping(value = "/updateMember/{type}")
-    public String updateMember(@PathVariable String type, @RequestParam Map<String, Object> map) throws Exception {
+    public String updateMember(@PathVariable String type, @RequestBody Map<String, Object> map) throws Exception {
         Member member = new Member();
         Gson gson = new Gson();
 
@@ -81,7 +81,7 @@ public class CommodityControllerUser {
     }
 
     @PostMapping(value = "/updateCourier")
-    public String updateCourier(@RequestParam Map<String, Object> map) throws Exception {
+    public String updateCourier(@RequestBody Map<String, Object> map) throws Exception {
         Courier courier = new Courier();
         Gson gson = new Gson();
 
@@ -108,12 +108,14 @@ public class CommodityControllerUser {
 
 //    更新生产环节信息，监听链码事件
     @PostMapping(value = "/updateProduction")
-    public String updateProduction(@RequestParam Map<String, Object> map) throws Exception {
+    public String updateProduction(@RequestBody Map<String, Object> map) throws Exception {
 
         Production production = new Production();
         Gson gson = new Gson();
 
         String traceability = (String) map.get("traceability");
+
+        production = queryComById(traceability).getProduction();
 
         production.setTemperature((String) map.get("temperature"));
         production.setAirHumidity((String) map.get("airHumidity"));
@@ -121,8 +123,6 @@ public class CommodityControllerUser {
         production.setWind((String) map.get("wind"));
         production.setSunlight((String) map.get("sunLight"));
         production.setDisaster((String) map.get("disaster"));
-        production.setIsInsured((String) map.get("isInsured"));
-        production.setIsCompensated((String) map.get("isCompensated"));
         String productionSort = gson.toJson(production);
 
         try (var eventSession = startChaincodeEventListening()) {

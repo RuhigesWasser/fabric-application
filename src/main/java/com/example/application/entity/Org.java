@@ -82,7 +82,7 @@ public class Org {
     }
 
     public void setAuthentication(String authentication) {
-        authentication = authentication;
+        this.authentication = authentication;
     }
 
     @Override

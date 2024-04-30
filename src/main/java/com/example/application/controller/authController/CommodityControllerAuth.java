@@ -6,8 +6,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-@CrossOrigin
 @RestController
+@CrossOrigin
 public class CommodityControllerAuth {
 
     @Autowired
@@ -29,17 +29,17 @@ public class CommodityControllerAuth {
     }
 
     @PostMapping(value = "/updateAuthority")
-    public String updateAuthority(@RequestParam Map<String, Object> map) throws Exception {
+    public String updateAuthority(@RequestBody Map<String, Object> map) throws Exception {
 
-        String traceability = (String) map.get("traceability");
-
+        System.out.println((String) map.get("traceability") + (String) map.get("barCode") + (String) map.get("name") + (String) map.get("category") + (String) map.get("brand"));
         try {
-            contract.submitTransaction("updateCommodityAuthority",traceability,
+            contract.submitTransaction("updateCommodityAuthority",
+                    (String) map.get("traceability"),
                     (String) map.get("barCode"),
                     (String) map.get("name"),
                     (String) map.get("category"),
                     (String) map.get("brand"));
-            return "成功更新" + traceability + "的识别信息";
+            return "成功更新识别信息";
         } catch (EndorseException | CommitException | SubmitException | CommitStatusException e) {
             return e.getMessage();
         }
